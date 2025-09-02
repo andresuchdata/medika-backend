@@ -19,7 +19,6 @@ help:
 build:
 	@echo "Building medika-backend..."
 	@go build -o bin/api cmd/api/main.go
-	@go build -o bin/worker cmd/worker/main.go
 
 # Run the application
 run:
@@ -127,7 +126,6 @@ env-setup:
 build-prod:
 	@echo "Building for production..."
 	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/api cmd/api/main.go
-	@CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o bin/worker cmd/worker/main.go
 
 # Local development with hot reload and dependencies
 dev-full: docker-up

@@ -2,7 +2,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Organizations table
-CREATE TABLE organizations (
+CREATE TABLE IF NOT EXISTS organizations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     type VARCHAR(50) NOT NULL CHECK (type IN ('hospital', 'clinic', 'private_practice')),
@@ -17,7 +17,7 @@ CREATE TABLE organizations (
 );
 
 -- Users table
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
@@ -36,7 +36,7 @@ CREATE TABLE users (
 );
 
 -- User profiles table
-CREATE TABLE user_profiles (
+CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     date_of_birth DATE,
@@ -51,7 +51,7 @@ CREATE TABLE user_profiles (
 );
 
 -- Rooms table
-CREATE TABLE rooms (
+CREATE TABLE IF NOT EXISTS rooms (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE rooms (
 );
 
 -- Appointments table
-CREATE TABLE appointments (
+CREATE TABLE IF NOT EXISTS appointments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     patient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     doctor_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
@@ -82,7 +82,7 @@ CREATE TABLE appointments (
 );
 
 -- Patient queues table
-CREATE TABLE patient_queues (
+CREATE TABLE IF NOT EXISTS patient_queues (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     appointment_id UUID NOT NULL REFERENCES appointments(id) ON DELETE CASCADE,
     organization_id UUID NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
@@ -94,7 +94,7 @@ CREATE TABLE patient_queues (
 );
 
 -- Notifications table
-CREATE TABLE notifications (
+CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(100) NOT NULL,
@@ -110,7 +110,7 @@ CREATE TABLE notifications (
 );
 
 -- Media table
-CREATE TABLE media (
+CREATE TABLE IF NOT EXISTS media (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     filename VARCHAR(255) NOT NULL,
     original_name VARCHAR(255) NOT NULL,
@@ -127,27 +127,27 @@ CREATE TABLE media (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_organization ON users(organization_id);
-CREATE INDEX idx_users_role ON users(role);
-CREATE INDEX idx_users_active ON users(is_active);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_organization ON users(organization_id);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active);
 
-CREATE INDEX idx_appointments_patient ON appointments(patient_id);
-CREATE INDEX idx_appointments_doctor ON appointments(doctor_id);
-CREATE INDEX idx_appointments_organization ON appointments(organization_id);
-CREATE INDEX idx_appointments_date ON appointments(date);
-CREATE INDEX idx_appointments_status ON appointments(status);
+CREATE INDEX IF NOT EXISTS idx_appointments_patient ON appointments(patient_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_doctor ON appointments(doctor_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_organization ON appointments(organization_id);
+CREATE INDEX IF NOT EXISTS idx_appointments_date ON appointments(date);
+CREATE INDEX IF NOT EXISTS idx_appointments_status ON appointments(status);
 
-CREATE INDEX idx_queues_organization ON patient_queues(organization_id);
-CREATE INDEX idx_queues_status ON patient_queues(status);
-CREATE INDEX idx_queues_position ON patient_queues(organization_id, position);
+CREATE INDEX IF NOT EXISTS idx_queues_organization ON patient_queues(organization_id);
+CREATE INDEX IF NOT EXISTS idx_queues_status ON patient_queues(status);
+CREATE INDEX IF NOT EXISTS idx_queues_position ON patient_queues(organization_id, position);
 
-CREATE INDEX idx_notifications_user ON notifications(user_id);
-CREATE INDEX idx_notifications_read ON notifications(is_read);
-CREATE INDEX idx_notifications_type ON notifications(type);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_read ON notifications(is_read);
+CREATE INDEX IF NOT EXISTS idx_notifications_type ON notifications(type);
 
-CREATE INDEX idx_media_organization ON media(organization_id);
-CREATE INDEX idx_media_uploaded_by ON media(uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_media_organization ON media(organization_id);
+CREATE INDEX IF NOT EXISTS idx_media_uploaded_by ON media(uploaded_by);
 
 -- Triggers for updated_at
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -158,10 +158,17 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS update_organizations_updated_at ON organizations;
 CREATE TRIGGER update_organizations_updated_at BEFORE UPDATE ON organizations FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
 CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_user_profiles_updated_at ON user_profiles;
 CREATE TRIGGER update_user_profiles_updated_at BEFORE UPDATE ON user_profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_rooms_updated_at ON rooms;
 CREATE TRIGGER update_rooms_updated_at BEFORE UPDATE ON rooms FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_appointments_updated_at ON appointments;
 CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON appointments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_patient_queues_updated_at ON patient_queues;
 CREATE TRIGGER update_patient_queues_updated_at BEFORE UPDATE ON patient_queues FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+DROP TRIGGER IF EXISTS update_media_updated_at ON media;
 CREATE TRIGGER update_media_updated_at BEFORE UPDATE ON media FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

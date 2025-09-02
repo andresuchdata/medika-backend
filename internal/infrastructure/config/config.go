@@ -78,6 +78,9 @@ func Load() (*Config, error) {
 	// Set defaults
 	setDefaults()
 
+	// Bind environment variables
+	bindEnvVars()
+
 	// Read from environment variables
 	viper.AutomaticEnv()
 
@@ -93,6 +96,15 @@ func Load() (*Config, error) {
 	}
 
 	return &config, nil
+}
+
+func bindEnvVars() {
+	// Bind environment variables to config keys
+	viper.BindEnv("database.url", "DATABASE_URL")
+	viper.BindEnv("redis.url", "REDIS_URL")
+	viper.BindEnv("auth.jwt_secret", "JWT_SECRET")
+	viper.BindEnv("log.level", "LOG_LEVEL")
+	viper.BindEnv("observability.tracing.jaeger_endpoint", "OTEL_EXPORTER_JAEGER_ENDPOINT")
 }
 
 func setDefaults() {

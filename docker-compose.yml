@@ -25,24 +25,24 @@ services:
     networks:
       - medika-network
 
-  # Background Worker Service
-  worker:
-    build:
-      context: .
-      dockerfile: docker/Dockerfile.worker
-    environment:
-      - ENV=development
-      - DATABASE_URL=postgres://medika_user:medika_pass@postgres:5432/medika_db?sslmode=disable
-      - REDIS_URL=redis://redis:6379
-      - LOG_LEVEL=info
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    networks:
-      - medika-network
+  # Background Worker Service (commented out until worker is implemented)
+  # worker:
+  #   build:
+  #     context: .
+  #     dockerfile: docker/Dockerfile.worker
+  #   environment:
+  #     - ENV=development
+  #     - DATABASE_URL=postgres://medika_user:medika_pass@postgres:5432/medika_db?sslmode=disable
+  #     - REDIS_URL=redis://redis:6379
+  #     - LOG_LEVEL=info
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   restart: unless-stopped
+  #   networks:
+  #     - medika-network
 
   # PostgreSQL Database
   postgres:
@@ -94,55 +94,55 @@ services:
     networks:
       - medika-network
 
-  # Prometheus for metrics
-  prometheus:
-    image: prom/prometheus:v2.48.0
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
-      - prometheus_data:/prometheus
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention.time=200h'
-      - '--web.enable-lifecycle'
-    restart: unless-stopped
-    networks:
-      - medika-network
+  # Prometheus for metrics (commented out until monitoring config is created)
+  # prometheus:
+  #   image: prom/prometheus:v2.48.0
+  #   ports:
+  #     - "9090:9090"
+  #   volumes:
+  #     - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+  #     - prometheus_data:/prometheus
+  #   command:
+  #     - '--config.file=/etc/prometheus/prometheus.yml'
+  #     - '--storage.tsdb.path=/prometheus'
+  #     - '--web.console.libraries=/etc/prometheus/console_libraries'
+  #     - '--web.console.templates=/etc/prometheus/consoles'
+  #     - '--storage.tsdb.retention.time=200h'
+  #     - '--web.enable-lifecycle'
+  #   restart: unless-stopped
+  #   networks:
+  #     - medika-network
 
-  # Grafana for visualization
-  grafana:
-    image: grafana/grafana:10.2.0
-    ports:
-      - "3000:3000"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_USERS_ALLOW_SIGN_UP=false
-    restart: unless-stopped
-    networks:
-      - medika-network
+  # Grafana for visualization (commented out until monitoring config is created)
+  # grafana:
+  #   image: grafana/grafana:10.2.0
+  #   ports:
+  #     - "3000:3000"
+  #   volumes:
+  #     - grafana_data:/var/lib/grafana
+  #     - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+  #   environment:
+  #     - GF_SECURITY_ADMIN_USER=admin
+  #     - GF_SECURITY_ADMIN_PASSWORD=admin
+  #     - GF_USERS_ALLOW_SIGN_UP=false
+  #   restart: unless-stopped
+  #   networks:
+  #     - medika-network
 
-  # Nginx reverse proxy
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
-      - ./nginx/ssl:/etc/nginx/ssl
-    depends_on:
-      - api
-    restart: unless-stopped
-    networks:
-      - medika-network
+  # Nginx reverse proxy (commented out until nginx config is created)
+  # nginx:
+  #   image: nginx:alpine
+  #   ports:
+  #     - "80:80"
+  #     - "443:443"
+  #   volumes:
+  #     - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+  #     - ./nginx/ssl:/etc/nginx/ssl
+  #   depends_on:
+  #     - api
+  #   restart: unless-stopped
+  #   networks:
+  #     - medika-network
 
 volumes:
   postgres_data:
