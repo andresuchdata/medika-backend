@@ -234,6 +234,78 @@ func (h *UserHandler) UpdateMedicalInfo(c *fiber.Ctx) error {
 	})
 }
 
+// PUT /api/v1/users/:id/avatar
+func (h *UserHandler) UpdateAvatar(c *fiber.Ctx) error {
+	userID := c.Params("id")
+	if userID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "User ID is required",
+			Message: "user ID parameter is missing",
+		})
+	}
+
+	var req dto.UpdateAvatarRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Invalid JSON format",
+			Message: err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Validation failed",
+			Message: err.Error(),
+		})
+	}
+
+	// Get current user ID from JWT token
+	currentUserID := c.Locals("user_id")
+	if currentUserID == nil {
+		return c.Status(fiber.StatusUnauthorized).JSON(dto.ErrorResponse{
+			Error:   "Unauthorized",
+			Message: "User not authenticated",
+		})
+	}
+
+	// Check if user is updating their own avatar or if they're an admin
+	currentUser, err := h.userService.GetUserByID(c.Context(), currentUserID.(string))
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
+			Error:   "Failed to get current user",
+			Message: err.Error(),
+		})
+	}
+
+	// Only allow users to update their own avatar, or admins to update any avatar
+	if currentUser.ID != userID && currentUser.Role != "admin" {
+		return c.Status(fiber.StatusForbidden).JSON(dto.ErrorResponse{
+			Error:   "Forbidden",
+			Message: "You can only update your own avatar",
+		})
+	}
+
+	cmd := userApp.UpdateAvatarCommand{
+		UserID:    userID,
+		AvatarURL: req.AvatarURL,
+	}
+
+	response, err := h.userService.UpdateAvatar(c.Context(), cmd)
+	if err != nil {
+		h.logger.Error(c.Context(), "Failed to update avatar", "user_id", userID, "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
+			Error:   "Failed to update avatar",
+			Message: err.Error(),
+		})
+	}
+
+	return c.JSON(dto.SuccessResponse{
+		Success: true,
+		Data:    response,
+		Message: "Avatar updated successfully",
+	})
+}
+
 // GET /api/v1/users?organization_id=:org_id
 func (h *UserHandler) GetUsersByOrganization(c *fiber.Ctx) error {
 	orgID := c.Query("organization_id")

@@ -34,6 +34,10 @@ type UpdateMedicalInfoRequest struct {
 	BloodType        *string  `json:"blood_type,omitempty" validate:"omitempty,oneof=A+ A- B+ B- AB+ AB- O+ O-"`
 }
 
+type UpdateAvatarRequest struct {
+	AvatarURL string `json:"avatar_url" validate:"required,url"`
+}
+
 // Response DTOs
 type UserResponse struct {
 	ID             string           `json:"id"`

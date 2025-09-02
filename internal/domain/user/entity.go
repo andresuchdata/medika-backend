@@ -233,6 +233,23 @@ func (u *User) UpdateMedicalInfo(
 	return nil
 }
 
+func (u *User) UpdateAvatar(avatarURL string) error {
+	// Validate avatar URL (basic validation)
+	if avatarURL == "" {
+		return errors.New("avatar URL cannot be empty")
+	}
+	
+	// Basic URL format validation
+	if len(avatarURL) > 500 {
+		return errors.New("avatar URL too long")
+	}
+
+	u.avatarURL = &avatarURL
+	u.updateTimestamp()
+	
+	return nil
+}
+
 func (u *User) Deactivate() {
 	u.isActive = false
 	u.updateTimestamp()

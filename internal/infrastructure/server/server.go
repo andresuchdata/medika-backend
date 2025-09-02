@@ -126,6 +126,7 @@ func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler) {
 	users.Get("/:id", middleware.AuthRequired(), userHandler.GetUser)
 	users.Put("/:id/profile", middleware.AuthRequired(), userHandler.UpdateUserProfile)
 	users.Put("/:id/medical-info", middleware.AuthRequired(), userHandler.UpdateMedicalInfo)
+	users.Put("/:id/avatar", middleware.AuthRequired(), userHandler.UpdateAvatar)
 }
 
 func (s *Server) Start(ctx context.Context) error {

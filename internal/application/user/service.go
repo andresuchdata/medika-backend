@@ -59,6 +59,11 @@ type UpdateMedicalInfoCommand struct {
 	BloodType        *string  `json:"blood_type,omitempty" validate:"omitempty,oneof=A+ A- B+ B- AB+ AB- O+ O-"`
 }
 
+type UpdateAvatarCommand struct {
+	UserID    string `json:"user_id" validate:"required,uuid"`
+	AvatarURL string `json:"avatar_url" validate:"required,url"`
+}
+
 type LoginCommand struct {
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required"`
@@ -214,6 +219,36 @@ func (s *Service) UpdateMedicalInfo(ctx context.Context, cmd UpdateMedicalInfoCo
 	}
 
 	s.logger.Info(ctx, "User medical info updated", "user_id", userID.String())
+
+	return s.toResponse(existingUser), nil
+}
+
+func (s *Service) UpdateAvatar(ctx context.Context, cmd UpdateAvatarCommand) (*UserResponse, error) {
+	s.logger.Info(ctx, "Updating user avatar", "user_id", cmd.UserID)
+
+	// Parse user ID
+	userID, err := shared.NewUserIDFromString(cmd.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid user ID: %w", err)
+	}
+
+	// Find existing user
+	existingUser, err := s.userRepo.FindByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("user not found: %w", err)
+	}
+
+	// Update avatar
+	if err := existingUser.UpdateAvatar(cmd.AvatarURL); err != nil {
+		return nil, fmt.Errorf("failed to update avatar: %w", err)
+	}
+
+	// Save changes
+	if err := s.userRepo.Update(ctx, existingUser); err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	s.logger.Info(ctx, "User avatar updated", "user_id", userID.String())
 
 	return s.toResponse(existingUser), nil
 }
