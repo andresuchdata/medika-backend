@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"medika-backend/internal/domain/shared"
+	"medika-backend/pkg/crypto"
 )
 
 // User aggregate root
@@ -98,7 +99,7 @@ func NewUser(
 	}
 
 	// Hash password
-	hashedPassword, err := shared.HashPassword(password)
+	hashedPassword, err := crypto.HashPassword(password)
 	if err != nil {
 		return nil, err
 	}
@@ -146,8 +147,12 @@ func (u *User) CreatedAt() time.Time                 { return u.createdAt }
 func (u *User) UpdatedAt() time.Time                 { return u.updatedAt }
 func (u *User) Version() int                         { return u.version }
 
+func (u *User) PasswordHash() string {
+	return u.passwordHash
+}
+
 func (u *User) VerifyPassword(password string) bool {
-	return shared.VerifyPassword(password, u.passwordHash)
+	return crypto.VerifyPassword(password, u.passwordHash)
 }
 
 func (u *User) UpdateProfile(

@@ -11,6 +11,8 @@ help:
 	@echo "  docker-up   - Start all services with Docker Compose"
 	@echo "  docker-down - Stop all Docker services"
 	@echo "  migrate     - Run database migrations"
+	@echo "  seed        - Seed database with all test data"
+	@echo "  setup-db    - Run migrations and seed data"
 	@echo "  clean       - Clean build artifacts"
 	@echo "  deps        - Download dependencies"
 	@echo "  lint        - Run linter"
@@ -19,6 +21,7 @@ help:
 build:
 	@echo "Building medika-backend..."
 	@go build -o bin/api cmd/api/main.go
+	@go build -o bin/seeder cmd/seeder/main.go
 
 # Run the application
 run:
@@ -56,6 +59,28 @@ docker-build:
 migrate:
 	@echo "Running database migrations..."
 	@PGPASSWORD=medika_pass psql -h localhost -U medika_user -d medika_db -f migrations/001_initial_schema.sql
+
+# Seed database with test data
+seed:
+	@echo "Seeding database..."
+	@go run cmd/seeder/main.go -all
+
+# Seed specific data
+seed-organizations:
+	@echo "Seeding organizations..."
+	@go run cmd/seeder/main.go -organizations
+
+seed-users:
+	@echo "Seeding users..."
+	@go run cmd/seeder/main.go -users
+
+seed-rooms:
+	@echo "Seeding rooms..."
+	@go run cmd/seeder/main.go -rooms
+
+# Full setup: migrate + seed
+setup-db: migrate seed
+	@echo "Database setup completed!"
 
 # Clean build artifacts
 clean:

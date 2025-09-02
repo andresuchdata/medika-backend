@@ -9,6 +9,8 @@ import (
 	"medika-backend/internal/domain/shared"
 	"medika-backend/internal/domain/user"
 	"medika-backend/pkg/logger"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // Application Service
@@ -227,7 +229,8 @@ func (s *Service) Login(ctx context.Context, cmd LoginCommand) (*LoginResponse, 
 
 	user, err := s.userRepo.FindByEmail(ctx, email)
 	if err != nil {
-		s.logger.Warn(ctx, "Login failed - user not found", "email", cmd.Email)
+		s.logger.Warn(ctx, "Login failed", "email", cmd.Email)
+
 		return nil, fmt.Errorf("invalid credentials")
 	}
 
@@ -359,8 +362,35 @@ func (s *Service) toProfileResponse(p *user.Profile) *ProfileResponse {
 	return profile
 }
 
-func (s *Service) generateJWT(_ *user.User) (string, error) {
-	// This would typically be handled by a separate auth service
-	// For now, return a placeholder
-	return "jwt_token_placeholder", nil
+func (s *Service) generateJWT(u *user.User) (string, error) {
+	// Create JWT claims
+	claims := jwt.MapClaims{
+		"user_id":         u.ID().String(),
+		"email":           u.Email().String(),
+		"name":            u.Name().String(),
+		"role":            u.Role().String(),
+		"organization_id": func() *string {
+			if u.OrganizationID() != nil {
+				orgID := u.OrganizationID().String()
+				return &orgID
+			}
+			return nil
+		}(),
+		"is_active": u.IsActive(),
+		"iat":       time.Now().Unix(),
+		"exp":       time.Now().Add(24 * time.Hour).Unix(), // Token expires in 24 hours
+	}
+
+	// Create token with claims
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+
+	// Sign token with secret
+	// In production, this should come from environment variables
+	jwtSecret := []byte("your-super-secret-jwt-key-change-in-production")
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		return "", fmt.Errorf("failed to sign JWT token: %w", err)
+	}
+
+	return tokenString, nil
 }

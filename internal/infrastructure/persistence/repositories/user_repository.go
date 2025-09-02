@@ -10,15 +10,20 @@ import (
 	"medika-backend/internal/domain/shared"
 	"medika-backend/internal/domain/user"
 	"medika-backend/internal/infrastructure/persistence/models"
+	"medika-backend/pkg/logger"
 )
 
 // UserRepository implements user.Repository
 type UserRepository struct {
-	db bun.IDB
+	db     bun.IDB
+	logger logger.Logger
 }
 
 func NewUserRepository(db *bun.DB) user.Repository {
-	return &UserRepository{db: db}
+	return &UserRepository{
+		db:     db,
+		logger: logger.New(),
+	}
 }
 
 func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
@@ -102,17 +107,18 @@ func (r *UserRepository) FindByID(ctx context.Context, id shared.UserID) (*user.
 	err := r.db.NewSelect().
 		Model(model).
 		Relation("Profile").
-		Where("u.id = ?", id.String()).
+		Where("id = ?", id.String()).
 		Scan(ctx)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("user not found")
 		}
+
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	return r.toDomain(model)
+	return r.toDomainWithContext(ctx, model)
 }
 
 func (r *UserRepository) FindByEmail(ctx context.Context, email shared.Email) (*user.User, error) {
@@ -120,8 +126,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email shared.Email) (*
 	
 	err := r.db.NewSelect().
 		Model(model).
-		Relation("Profile").
-		Where("u.email = ?", email.String()).
+		Where("email = ?", email.String()).
 		Scan(ctx)
 
 	if err != nil {
@@ -131,7 +136,7 @@ func (r *UserRepository) FindByEmail(ctx context.Context, email shared.Email) (*
 		return nil, fmt.Errorf("failed to find user: %w", err)
 	}
 
-	return r.toDomain(model)
+	return r.toDomainWithContext(ctx, model)
 }
 
 func (r *UserRepository) FindByOrganization(ctx context.Context, orgID shared.OrganizationID, filters user.UserFilters) ([]*user.User, error) {
@@ -175,7 +180,7 @@ func (r *UserRepository) FindByOrganization(ctx context.Context, orgID shared.Or
 
 	users := make([]*user.User, len(models))
 	for i, model := range models {
-		domainUser, err := r.toDomain(model)
+		domainUser, err := r.toDomainWithContext(ctx, model)
 		if err != nil {
 			return nil, err
 		}
@@ -205,7 +210,7 @@ func (r *UserRepository) FindByRole(ctx context.Context, role user.Role, orgID *
 
 	users := make([]*user.User, len(models))
 	for i, model := range models {
-		domainUser, err := r.toDomain(model)
+		domainUser, err := r.toDomainWithContext(ctx, model)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +266,7 @@ func (r *UserRepository) FindActiveUsers(ctx context.Context, orgID *shared.Orga
 
 	users := make([]*user.User, len(models))
 	for i, model := range models {
-		domainUser, err := r.toDomain(model)
+		domainUser, err := r.toDomainWithContext(ctx, model)
 		if err != nil {
 			return nil, err
 		}
@@ -284,7 +289,7 @@ func (r *UserRepository) toModel(u *user.User) *models.User {
 		ID:           u.ID().String(),
 		Email:        u.Email().String(),
 		Name:         u.Name().String(),
-		PasswordHash: "", // Don't expose password hash
+		PasswordHash: u.PasswordHash(),
 		Role:         u.Role().String(),
 		IsActive:     u.IsActive(),
 		CreatedAt:    u.CreatedAt(),
@@ -321,40 +326,67 @@ func (r *UserRepository) toProfileModel(userID shared.UserID, _ *user.Profile) *
 	return profile
 }
 
-func (r *UserRepository) toDomain(model *models.User) (*user.User, error) {
-	userID, err := shared.NewUserIDFromString(model.ID)
-	if err != nil {
-		return nil, err
+func (r *UserRepository) toDomainWithContext(ctx context.Context, model *models.User) (*user.User, error) {
+	// Validate critical fields that must be present
+	userIDResult := safeValidateUserID(model.ID)
+	if !userIDResult.IsValid() {
+		r.logger.Error(ctx, "Critical validation failed: invalid user ID", 
+			"user_id", model.ID, 
+			"error", userIDResult.GetError())
+		return nil, fmt.Errorf("invalid user ID: %w", userIDResult.GetError())
 	}
 
-	email, err := shared.NewEmail(model.Email)
-	if err != nil {
-		return nil, err
+	emailResult := safeValidateEmail(model.Email)
+	if !emailResult.IsValid() {
+		r.logger.Error(ctx, "Critical validation failed: invalid email", 
+			"user_id", model.ID, 
+			"email", model.Email, 
+			"error", emailResult.GetError())
+		return nil, fmt.Errorf("invalid email: %w", emailResult.GetError())
 	}
 
-	name, err := shared.NewName(model.Name)
-	if err != nil {
-		return nil, err
+	nameResult := safeValidateName(model.Name)
+	if !nameResult.IsValid() {
+		r.logger.Error(ctx, "Critical validation failed: invalid name", 
+			"user_id", model.ID, 
+			"name", model.Name, 
+			"error", nameResult.GetError())
+		return nil, fmt.Errorf("invalid name: %w", nameResult.GetError())
 	}
 
 	role := user.Role(model.Role)
 
+	// Handle optional fields with graceful degradation
 	var orgID *shared.OrganizationID
 	if model.OrganizationID != nil {
-		id, err := shared.NewOrganizationID(*model.OrganizationID)
-		if err != nil {
-			return nil, err
+		orgIDResult := safeValidateOrganizationID(*model.OrganizationID)
+		if !orgIDResult.IsValid() {
+			r.logger.Warn(ctx, "Non-critical validation failed: invalid organization ID", 
+				"user_id", model.ID, 
+				"organization_id", *model.OrganizationID, 
+				"error", orgIDResult.GetError())
+			// Continue with nil orgID instead of failing
+			orgID = nil
+		} else {
+			id := orgIDResult.GetValue()
+			orgID = &id
 		}
-		orgID = &id
 	}
 
 	var phone *shared.PhoneNumber
 	if model.Phone != nil {
-		pn, err := shared.NewPhoneNumber(*model.Phone)
-		if err != nil {
-			return nil, err
+		phoneResult := safeValidatePhoneNumber(*model.Phone)
+		if !phoneResult.IsValid() {
+			r.logger.Warn(ctx, "Non-critical validation failed: invalid phone number", 
+				"user_id", model.ID, 
+				"email", model.Email, 
+				"phone", *model.Phone, 
+				"error", phoneResult.GetError())
+			// Continue with nil phone instead of failing
+			phone = nil
+		} else {
+			phone = phoneResult.GetValue()
 		}
-		phone = &pn
 	}
 
 	// Convert profile if exists
@@ -366,9 +398,9 @@ func (r *UserRepository) toDomain(model *models.User) (*user.User, error) {
 	}
 
 	return user.ReconstructUser(
-		userID,
-		email,
-		name,
+		userIDResult.GetValue(),
+		emailResult.GetValue(),
+		nameResult.GetValue(),
 		model.PasswordHash,
 		role,
 		orgID,
@@ -380,4 +412,9 @@ func (r *UserRepository) toDomain(model *models.User) (*user.User, error) {
 		model.UpdatedAt,
 		model.Version,
 	), nil
+}
+
+// Backward compatibility method
+func (r *UserRepository) toDomain(model *models.User) (*user.User, error) {
+	return r.toDomainWithContext(context.Background(), model)
 }
