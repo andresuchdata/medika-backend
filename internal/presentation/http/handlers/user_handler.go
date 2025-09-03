@@ -392,3 +392,153 @@ func (h *UserHandler) GetCurrentUser(c *fiber.Ctx) error {
 		Data:    response,
 	})
 }
+
+// GET /api/v1/doctors
+func (h *UserHandler) GetDoctors(c *fiber.Ctx) error {
+	// For now, return a placeholder response
+	// This should be implemented with a proper doctor service
+	return c.JSON(dto.SuccessResponse{
+		Success: true,
+		Data: []dto.DoctorResponse{
+			{
+				ID:             "1",
+				Name:           "Dr. Sarah Johnson",
+				Email:          "sarah.johnson@medika.com",
+				Phone:          "+1-555-0001",
+				Specialty:      "Cardiology",
+				LicenseNumber:  "MD123456",
+				Status:         "active",
+				OrganizationID: "org-1",
+				CreatedAt:      "2024-01-01T00:00:00Z",
+				UpdatedAt:      "2024-01-01T00:00:00Z",
+			},
+		},
+		Message: "Doctors retrieved successfully",
+	})
+}
+
+// GET /api/v1/doctors/:id
+func (h *UserHandler) GetDoctor(c *fiber.Ctx) error {
+	doctorID := c.Params("id")
+	if doctorID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Doctor ID is required",
+			Message: "Please provide a valid doctor ID",
+		})
+	}
+
+	// For now, return a placeholder response
+	return c.JSON(dto.SuccessResponse{
+		Success: true,
+		Data: dto.DoctorResponse{
+			ID:             doctorID,
+			Name:           "Dr. Sarah Johnson",
+			Email:          "sarah.johnson@medika.com",
+			Phone:          "+1-555-0001",
+			Specialty:      "Cardiology",
+			LicenseNumber:  "MD123456",
+			Status:         "active",
+			OrganizationID: "org-1",
+			CreatedAt:      "2024-01-01T00:00:00Z",
+			UpdatedAt:      "2024-01-01T00:00:00Z",
+		},
+		Message: "Doctor retrieved successfully",
+	})
+}
+
+// POST /api/v1/doctors
+func (h *UserHandler) CreateDoctor(c *fiber.Ctx) error {
+	var req dto.CreateDoctorRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Invalid JSON format",
+			Message: err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Validation failed",
+			Message: err.Error(),
+		})
+	}
+
+	// For now, return a placeholder response
+	return c.Status(fiber.StatusCreated).JSON(dto.SuccessResponse{
+		Success: true,
+		Data: dto.DoctorResponse{
+			ID:             "new-doctor-id",
+			Name:           req.Name,
+			Email:          req.Email,
+			Phone:          req.Phone,
+			Specialty:      req.Specialty,
+			LicenseNumber:  req.LicenseNumber,
+			Status:         "active",
+			OrganizationID: req.OrganizationID,
+			CreatedAt:      "2024-01-01T00:00:00Z",
+			UpdatedAt:      "2024-01-01T00:00:00Z",
+		},
+		Message: "Doctor created successfully",
+	})
+}
+
+// PUT /api/v1/doctors/:id
+func (h *UserHandler) UpdateDoctor(c *fiber.Ctx) error {
+	doctorID := c.Params("id")
+	if doctorID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Doctor ID is required",
+			Message: "Please provide a valid doctor ID",
+		})
+	}
+
+	var req dto.UpdateDoctorRequest
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Invalid JSON format",
+			Message: err.Error(),
+		})
+	}
+
+	if err := h.validator.Struct(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Validation failed",
+			Message: err.Error(),
+		})
+	}
+
+	// For now, return a placeholder response
+	return c.JSON(dto.SuccessResponse{
+		Success: true,
+		Data: dto.DoctorResponse{
+			ID:             doctorID,
+			Name:           getStringValue(req.Name),
+			Email:          "sarah.johnson@medika.com",
+			Phone:          getStringValue(req.Phone),
+			Specialty:      getStringValue(req.Specialty),
+			LicenseNumber:  getStringValue(req.LicenseNumber),
+			Status:         getStringValue(req.Status),
+			OrganizationID: "org-1",
+			CreatedAt:      "2024-01-01T00:00:00Z",
+			UpdatedAt:      "2024-01-01T00:00:00Z",
+		},
+		Message: "Doctor updated successfully",
+	})
+}
+
+// DELETE /api/v1/doctors/:id
+func (h *UserHandler) DeleteDoctor(c *fiber.Ctx) error {
+	doctorID := c.Params("id")
+	if doctorID == "" {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Doctor ID is required",
+			Message: "Please provide a valid doctor ID",
+		})
+	}
+
+	// For now, return a placeholder response
+	return c.JSON(dto.SuccessResponse{
+		Success: true,
+		Message: "Doctor deleted successfully",
+	})
+}

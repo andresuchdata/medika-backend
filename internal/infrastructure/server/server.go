@@ -14,6 +14,10 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/uptrace/bun"
 
+	"medika-backend/internal/application/appointment"
+	"medika-backend/internal/application/doctor"
+	"medika-backend/internal/application/organization"
+	"medika-backend/internal/application/patient"
 	"medika-backend/internal/application/user"
 	"medika-backend/internal/infrastructure/config"
 	"medika-backend/internal/infrastructure/persistence/repositories"
@@ -48,18 +52,30 @@ func New(
 	
 	// Repositories
 	userRepo := repositories.NewUserRepository(db)
+	patientRepo := repositories.NewPatientRepository(db)
+	doctorRepo := repositories.NewDoctorRepository(db)
+	organizationRepo := repositories.NewOrganizationRepository(db)
+	appointmentRepo := repositories.NewAppointmentRepository(db)
 	
 	// Application services
 	userService := user.NewService(userRepo, nil, logger) // eventBus would be injected
+	patientService := patient.NewService(patientRepo, logger)
+	doctorService := doctor.NewService(doctorRepo, logger)
+	organizationService := organization.NewService(organizationRepo, logger)
+	appointmentService := appointment.NewService(appointmentRepo, logger)
 	
 	// Handlers
 	userHandler := handlers.NewUserHandler(userService, validator, logger)
+	patientHandler := handlers.NewPatientHandler(patientService, validator, logger)
+	doctorsHandler := handlers.NewDoctorHandler(doctorService, validator, logger)
+	organizationsHandler := handlers.NewOrganizationHandler(organizationService, validator, logger)
+	appointmentsHandler := handlers.NewAppointmentHandler(appointmentService, validator, logger)
 
 	// Setup middleware
 	setupMiddleware(app)
 	
 	// Setup routes
-	setupRoutes(app, userHandler)
+	setupRoutes(app, userHandler, patientHandler, doctorsHandler, organizationsHandler, appointmentsHandler)
 
 	return &Server{
 		app:    app,
@@ -100,7 +116,7 @@ func setupMiddleware(app *fiber.App) {
 	})
 }
 
-func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler) {
+func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandler *handlers.PatientHandler, doctorsHandler *handlers.DoctorHandler, organizationsHandler *handlers.OrganizationHandler, appointmentsHandler *handlers.AppointmentHandler) {
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -127,6 +143,35 @@ func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler) {
 	users.Put("/:id/profile", middleware.AuthRequired(), userHandler.UpdateUserProfile)
 	users.Put("/:id/medical-info", middleware.AuthRequired(), userHandler.UpdateMedicalInfo)
 	users.Put("/:id/avatar", middleware.AuthRequired(), userHandler.UpdateAvatar)
+	
+	// Patient routes
+	patients := api.Group("/patients")
+	patients.Get("/", patientHandler.GetPatients)
+
+	// Doctor routes
+	doctors := api.Group("/doctors")
+	doctors.Get("/", doctorsHandler.GetDoctors)
+	doctors.Get("/:id", doctorsHandler.GetDoctor)
+	doctors.Post("/", doctorsHandler.CreateDoctor)
+	doctors.Put("/:id", doctorsHandler.UpdateDoctor)
+	doctors.Delete("/:id", doctorsHandler.DeleteDoctor)
+
+	// Organization routes
+	organizations := api.Group("/organizations")
+	organizations.Get("/", organizationsHandler.GetOrganizations)
+	organizations.Get("/:id", organizationsHandler.GetOrganization)
+	organizations.Post("/", organizationsHandler.CreateOrganization)
+	organizations.Put("/:id", organizationsHandler.UpdateOrganization)
+	organizations.Delete("/:id", organizationsHandler.DeleteOrganization)
+
+	// Appointment routes
+	appointments := api.Group("/appointments")
+	appointments.Get("/", appointmentsHandler.GetAppointments)
+	appointments.Get("/:id", appointmentsHandler.GetAppointment)
+	appointments.Post("/", appointmentsHandler.CreateAppointment)
+	appointments.Put("/:id", appointmentsHandler.UpdateAppointment)
+	appointments.Delete("/:id", appointmentsHandler.DeleteAppointment)
+	appointments.Put("/:id/status", appointmentsHandler.UpdateAppointmentStatus)
 }
 
 func (s *Server) Start(ctx context.Context) error {

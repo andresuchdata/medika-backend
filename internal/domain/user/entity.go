@@ -61,6 +61,14 @@ type Profile struct {
 	medicalHistory  *string
 	allergies       []string
 	bloodType       *shared.BloodType
+	// Doctor-specific fields
+	specialty       *string
+	licenseNumber   *string
+	bio             *string
+	experience      *int
+	education       []string
+	certifications  []string
+	nextAvailable   *string
 }
 
 // Getter methods for Profile
@@ -72,6 +80,14 @@ func (p *Profile) EmergencyContact() *string       { return p.emergencyContact }
 func (p *Profile) MedicalHistory() *string         { return p.medicalHistory }
 func (p *Profile) Allergies() []string             { return p.allergies }
 func (p *Profile) BloodType() *shared.BloodType    { return p.bloodType }
+// Doctor-specific getters
+func (p *Profile) Specialty() *string              { return p.specialty }
+func (p *Profile) LicenseNumber() *string          { return p.licenseNumber }
+func (p *Profile) Bio() *string                    { return p.bio }
+func (p *Profile) Experience() *int                { return p.experience }
+func (p *Profile) Education() []string             { return p.education }
+func (p *Profile) Certifications() []string        { return p.certifications }
+func (p *Profile) NextAvailable() *string          { return p.nextAvailable }
 
 // Constructor
 func NewUser(
@@ -146,6 +162,12 @@ func (u *User) Profile() *Profile                    { return u.profile }
 func (u *User) CreatedAt() time.Time                 { return u.createdAt }
 func (u *User) UpdatedAt() time.Time                 { return u.updatedAt }
 func (u *User) Version() int                         { return u.version }
+func (u *User) Status() string                       { 
+	if u.isActive {
+		return "active"
+	}
+	return "inactive"
+}
 
 func (u *User) PasswordHash() string {
 	return u.passwordHash
@@ -228,6 +250,38 @@ func (u *User) UpdateMedicalInfo(
 	u.profile.medicalHistory = medicalHistory
 	u.profile.allergies = allergies
 	u.profile.bloodType = bloodTypeValue
+	u.updateTimestamp()
+
+	return nil
+}
+
+func (u *User) UpdateDoctorProfile(
+	specialty *string,
+	licenseNumber *string,
+	bio *string,
+	experience *int,
+	education []string,
+	certifications []string,
+	nextAvailable *string,
+) error {
+	// Only doctors can have doctor profile information
+	if u.role != RoleDoctor {
+		return errors.New("doctor profile information not applicable for this user role")
+	}
+
+	if u.profile == nil {
+		u.profile = &Profile{
+			userID: u.id,
+		}
+	}
+
+	u.profile.specialty = specialty
+	u.profile.licenseNumber = licenseNumber
+	u.profile.bio = bio
+	u.profile.experience = experience
+	u.profile.education = education
+	u.profile.certifications = certifications
+	u.profile.nextAvailable = nextAvailable
 	u.updateTimestamp()
 
 	return nil
