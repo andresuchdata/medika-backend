@@ -15,9 +15,11 @@ import (
 	"github.com/uptrace/bun"
 
 	"medika-backend/internal/application/appointment"
+	"medika-backend/internal/application/dashboard"
 	"medika-backend/internal/application/doctor"
 	"medika-backend/internal/application/organization"
 	"medika-backend/internal/application/patient"
+	"medika-backend/internal/application/queue"
 	"medika-backend/internal/application/user"
 	"medika-backend/internal/infrastructure/config"
 	"medika-backend/internal/infrastructure/persistence/repositories"
@@ -56,13 +58,16 @@ func New(
 	doctorRepo := repositories.NewDoctorRepository(db)
 	organizationRepo := repositories.NewOrganizationRepository(db)
 	appointmentRepo := repositories.NewAppointmentRepository(db)
+	queueRepo := repositories.NewQueueRepository(db)
 	
 	// Application services
 	userService := user.NewService(userRepo, nil, logger) // eventBus would be injected
 	patientService := patient.NewService(patientRepo, logger)
-	doctorService := doctor.NewService(doctorRepo, logger)
+	doctorService := doctor.NewService(doctorRepo, userRepo, logger)
 	organizationService := organization.NewService(organizationRepo, logger)
 	appointmentService := appointment.NewService(appointmentRepo, logger)
+	queueService := queue.NewService(queueRepo, logger)
+	dashboardService := dashboard.NewService(patientRepo, appointmentRepo, queueRepo, doctorRepo, logger)
 	
 	// Handlers
 	userHandler := handlers.NewUserHandler(userService, validator, logger)
@@ -70,12 +75,14 @@ func New(
 	doctorsHandler := handlers.NewDoctorHandler(doctorService, validator, logger)
 	organizationsHandler := handlers.NewOrganizationHandler(organizationService, validator, logger)
 	appointmentsHandler := handlers.NewAppointmentHandler(appointmentService, validator, logger)
+	queueHandler := handlers.NewQueueHandler(queueService, validator, logger)
+	dashboardHandler := handlers.NewDashboardHandler(dashboardService, validator, logger)
 
 	// Setup middleware
 	setupMiddleware(app)
 	
 	// Setup routes
-	setupRoutes(app, userHandler, patientHandler, doctorsHandler, organizationsHandler, appointmentsHandler)
+	setupRoutes(app, userHandler, patientHandler, doctorsHandler, organizationsHandler, appointmentsHandler, queueHandler, dashboardHandler)
 
 	return &Server{
 		app:    app,
@@ -116,7 +123,7 @@ func setupMiddleware(app *fiber.App) {
 	})
 }
 
-func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandler *handlers.PatientHandler, doctorsHandler *handlers.DoctorHandler, organizationsHandler *handlers.OrganizationHandler, appointmentsHandler *handlers.AppointmentHandler) {
+func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandler *handlers.PatientHandler, doctorsHandler *handlers.DoctorHandler, organizationsHandler *handlers.OrganizationHandler, appointmentsHandler *handlers.AppointmentHandler, queueHandler *handlers.QueueHandler, dashboardHandler *handlers.DashboardHandler) {
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -172,6 +179,19 @@ func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandl
 	appointments.Put("/:id", appointmentsHandler.UpdateAppointment)
 	appointments.Delete("/:id", appointmentsHandler.DeleteAppointment)
 	appointments.Put("/:id/status", appointmentsHandler.UpdateAppointmentStatus)
+
+	// Queue routes
+	queues := api.Group("/queues")
+	queues.Get("/", queueHandler.GetQueues)
+	queues.Get("/:id", queueHandler.GetQueue)
+	queues.Post("/", queueHandler.CreateQueue)
+	queues.Put("/:id", queueHandler.UpdateQueue)
+	queues.Delete("/:id", queueHandler.DeleteQueue)
+	queues.Post("/:id/actions", queueHandler.QueueAction)
+
+	// Dashboard routes
+	dashboard := api.Group("/dashboard")
+	dashboard.Get("/summary", dashboardHandler.GetDashboardSummary)
 }
 
 func (s *Server) Start(ctx context.Context) error {

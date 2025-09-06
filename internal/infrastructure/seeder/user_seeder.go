@@ -31,7 +31,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 	users := []*models.User{
 		// Admin users
 		{
-			ID:             "11111111-1111-1111-1111-111111111111",
+			ID:             "11120001-1111-1111-1111-111111111111",
 			Email:          "admin@medika.com",
 			Name:           "Dr. Sarah Johnson",
 			PasswordHash:   defaultPassword,
@@ -41,7 +41,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "11111111-1111-1111-1111-111111111112",
+			ID:             "11120002-1111-1111-1111-111111111111",
 			Name:           "System Administrator",
 			Email:          "sysadmin@medika.com",
 			PasswordHash:   defaultPassword,
@@ -53,7 +53,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 
 		// Doctor users
 		{
-			ID:             "22222222-2222-2222-2222-222222222222",
+			ID:             "11130001-1111-1111-1111-111111111111",
 			Email:          "doctor.smith@medika.com",
 			Name:           "Dr. Michael Smith",
 			PasswordHash:   defaultPassword,
@@ -63,7 +63,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "22222222-2222-2222-2222-222222222223",
+			ID:             "11130002-1111-1111-1111-111111111111",
 			Email:          "doctor.jones@medika.com",
 			Name:           "Dr. Jennifer Jones",
 			PasswordHash:   defaultPassword,
@@ -73,7 +73,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "22222222-2222-2222-2222-222222222224",
+			ID:             "11130003-1111-1111-1111-111111111111",
 			Email:          "doctor.brown@downtownmedical.com",
 			Name:           "Dr. Robert Brown",
 			PasswordHash:   defaultPassword,
@@ -85,7 +85,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 
 		// Nurse users
 		{
-			ID:             "33333333-3333-3333-3333-333333333333",
+			ID:             "11140001-1111-1111-1111-111111111111",
 			Email:          "nurse.wilson@medika.com",
 			Name:           "Nurse Emily Wilson",
 			PasswordHash:   defaultPassword,
@@ -95,7 +95,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "33333333-3333-3333-3333-333333333334",
+			ID:             "11140002-1111-1111-1111-111111111111",
 			Email:          "nurse.davis@medika.com",
 			Name:           "Nurse Lisa Davis",
 			PasswordHash:   defaultPassword,
@@ -107,7 +107,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 
 		// Patient users
 		{
-			ID:             "44444444-4444-4444-4444-444444444444",
+			ID:             "11150001-1111-1111-1111-111111111111",
 			Email:          "patient.john@email.com",
 			Name:           "John Doe",
 			PasswordHash:   defaultPassword,
@@ -117,7 +117,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "44444444-4444-4444-4444-444444444445",
+			ID:             "11150002-1111-1111-1111-111111111111",
 			Email:          "patient.jane@email.com",
 			Name:           "Jane Smith",
 			PasswordHash:   defaultPassword,
@@ -127,7 +127,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "44444444-4444-4444-4444-444444444446",
+			ID:             "11150003-1111-1111-1111-111111111111",
 			Email:          "patient.bob@email.com",
 			Name:           "Bob Johnson",
 			PasswordHash:   defaultPassword,
@@ -139,7 +139,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 
 		// Cashier users
 		{
-			ID:             "55555555-5555-5555-5555-555555555555",
+			ID:             "11160001-1111-1111-1111-111111111111",
 			Email:          "cashier@medika.com",
 			Name:           "Maria Rodriguez",
 			PasswordHash:   defaultPassword,
@@ -149,7 +149,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 		{
-			ID:             "55555555-5555-5555-5555-555555555556",
+			ID:             "11160002-1111-1111-1111-111111111111",
 			Email:          "cashier2@medika.com",
 			Name:           "Carlos Martinez",
 			PasswordHash:   defaultPassword,

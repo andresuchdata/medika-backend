@@ -28,7 +28,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 	rooms := []*models.Room{
 		// Medika General Hospital rooms
 		{
-			ID:             "66666666-6666-6666-6666-666666666661",
+			ID:             "11111001-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcdef",
 			Name:           "Consultation Room 1",
 			Type:           "consultation",
@@ -37,7 +37,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Examination table", "Blood pressure monitor", "Stethoscope", "Digital thermometer"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-666666666662",
+			ID:             "11111002-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcdef",
 			Name:           "Consultation Room 2",
 			Type:           "consultation",
@@ -46,7 +46,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Examination table", "Blood pressure monitor", "Stethoscope", "Digital thermometer"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-666666666663",
+			ID:             "11111003-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcdef",
 			Name:           "Emergency Room",
 			Type:           "examination",
@@ -55,7 +55,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Trauma bed", "Defibrillator", "Oxygen supply", "IV equipment", "Monitors"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-666666666664",
+			ID:             "11111004-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcdef",
 			Name:           "Surgery Room A",
 			Type:           "procedure",
@@ -64,7 +64,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Operating table", "Anesthesia machine", "Surgical lights", "Monitors", "Ventilator"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-666666666665",
+			ID:             "11111005-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcdef",
 			Name:           "Waiting Area Main",
 			Type:           "waiting",
@@ -75,7 +75,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 
 		// Downtown Medical Clinic rooms
 		{
-			ID:             "66666666-6666-6666-6666-666666666666",
+			ID:             "11111006-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcde0",
 			Name:           "Clinic Room 1",
 			Type:           "consultation",
@@ -84,7 +84,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Examination table", "Blood pressure monitor", "Stethoscope"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-666666666667",
+			ID:             "11111007-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcde0",
 			Name:           "Clinic Room 2",
 			Type:           "consultation",
@@ -93,7 +93,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Examination table", "Blood pressure monitor", "Stethoscope"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-666666666668",
+			ID:             "11111008-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcde0",
 			Name:           "Clinic Waiting Area",
 			Type:           "waiting",
@@ -104,7 +104,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 
 		// Private Practice Center rooms
 		{
-			ID:             "66666666-6666-6666-6666-666666666669",
+			ID:             "11111009-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcde1",
 			Name:           "Private Office 1",
 			Type:           "office",
@@ -113,7 +113,7 @@ func (s *RoomSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Equipment:      pq.StringArray{"Desk", "Examination table", "Medical equipment"},
 		},
 		{
-			ID:             "66666666-6666-6666-6666-66666666666a",
+			ID:             "11111010-1111-1111-1111-111111111111",
 			OrganizationID: "01234567-89ab-cdef-0123-456789abcde1",
 			Name:           "Private Waiting Room",
 			Type:           "waiting",

@@ -3,6 +3,7 @@ package appointment
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 
@@ -25,13 +26,32 @@ func NewService(appointmentRepo appointment.Repository, logger logger.Logger) *S
 
 // Methods that match the AppointmentService interface
 func (s *Service) GetAppointments(ctx *fiber.Ctx, organizationID, doctorID, patientID string, limit, offset int) ([]*appointment.Appointment, error) {
-	// For now, return empty list - implement filtering logic later
-	return []*appointment.Appointment{}, nil
+	// If specific filters are provided, use them
+	if patientID != "" {
+		return s.appointmentRepo.GetByPatient(ctx.Context(), patientID, limit, offset)
+	}
+	if doctorID != "" {
+		return s.appointmentRepo.GetByDoctor(ctx.Context(), doctorID, limit, offset)
+	}
+	if organizationID != "" {
+		return s.appointmentRepo.GetByOrganization(ctx.Context(), organizationID, limit, offset)
+	}
+	
+	// If no specific filters, get all appointments (similar to dashboard behavior)
+	// We need to implement a method to get all appointments, or use a default organization
+	// For now, let's get appointments for today's date without organization filter
+	return s.appointmentRepo.GetAppointmentsByDate(ctx.Context(), "", time.Now().Format("2006-01-02"), limit)
 }
 
 func (s *Service) CountAppointments(ctx *fiber.Ctx, organizationID, doctorID, patientID string) (int, error) {
-	// For now, return 0 - implement counting logic later
-	return 0, nil
+	// If specific filters are provided, we need to implement specific counting methods
+	// For now, use organization-based counting as the primary method
+	if organizationID != "" {
+		return s.appointmentRepo.CountByOrganization(ctx.Context(), organizationID)
+	}
+	
+	// If no organization filter, count all appointments for today (similar to dashboard behavior)
+	return s.appointmentRepo.CountAppointmentsByDate(ctx.Context(), "", time.Now().Format("2006-01-02"))
 }
 
 func (s *Service) GetAppointmentByID(ctx *fiber.Ctx, appointmentID string) (*appointment.Appointment, error) {

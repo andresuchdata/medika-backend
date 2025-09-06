@@ -89,6 +89,16 @@ func (p *Profile) Education() []string             { return p.education }
 func (p *Profile) Certifications() []string        { return p.certifications }
 func (p *Profile) NextAvailable() *string          { return p.nextAvailable }
 
+// NewProfile creates a new Profile instance
+func NewProfile(userID shared.UserID) *Profile {
+	return &Profile{
+		userID:          userID,
+		allergies:       []string{},
+		education:       []string{},
+		certifications:  []string{},
+	}
+}
+
 // Constructor
 func NewUser(
 	email, name, password string,

@@ -42,6 +42,16 @@ func (h *PatientHandler) GetPatients(c *fiber.Ctx) error {
 	pageStr := c.Query("page", "1")
 	organizationID := c.Query("organizationId", "")
 	
+	// Validate organizationId if provided
+	if organizationID != "" {
+		if err := h.validator.Var(organizationID, "uuid"); err != nil {
+			return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+				Error:   "Invalid organization ID",
+				Message: "Organization ID must be a valid UUID",
+			})
+		}
+	}
+	
 	// Parse pagination parameters
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {

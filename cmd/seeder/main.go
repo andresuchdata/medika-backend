@@ -19,6 +19,8 @@ func main() {
 		org = flag.Bool("organizations", false, "Seed organizations")
 		usr = flag.Bool("users", false, "Seed users")
 		rom = flag.Bool("rooms", false, "Seed rooms")
+		apt = flag.Bool("appointments", false, "Seed appointments")
+		que = flag.Bool("queues", false, "Seed queues")
 	)
 	flag.Parse()
 
@@ -50,6 +52,12 @@ func main() {
 	if *all || *rom {
 		manager.Register(seeder.NewRoomSeeder())
 	}
+	if *all || *apt {
+		manager.Register(seeder.NewAppointmentSeeder())
+	}
+	if *all || *que {
+		manager.Register(seeder.NewQueueSeeder())
+	}
 
 	// Check if any seeders were registered
 	if len(manager.GetSeeders()) == 0 {
@@ -60,6 +68,7 @@ func main() {
 		fmt.Println("  seeder -all                    # Run all seeders")
 		fmt.Println("  seeder -organizations -users   # Seed organizations and users")
 		fmt.Println("  seeder -users                  # Seed only users")
+		fmt.Println("  seeder -appointments -queues   # Seed appointments and queues")
 		os.Exit(1)
 	}
 

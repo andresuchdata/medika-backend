@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/uptrace/bun"
 
@@ -19,11 +20,207 @@ type UserRepository struct {
 	logger logger.Logger
 }
 
+// UserQueryBuilder handles all user query building logic with single responsibility
+type UserQueryBuilder struct {
+	query *bun.SelectQuery
+}
+
+// NewUserQueryBuilder creates a new query builder for user queries
+func NewUserQueryBuilder(db bun.IDB) *UserQueryBuilder {
+	return &UserQueryBuilder{
+		query: db.NewSelect().
+			Model((*models.User)(nil)).
+			Relation("Profile"),
+	}
+}
+
+// ApplyFilters applies all filters to the query
+func (qb *UserQueryBuilder) ApplyFilters(filters user.UserFilters) *UserQueryBuilder {
+	// Basic filters
+	if filters.Name != "" {
+		qb.query = qb.query.Where("user.name ILIKE ?", "%"+filters.Name+"%")
+	}
+	if filters.Email != "" {
+		qb.query = qb.query.Where("user.email ILIKE ?", "%"+filters.Email+"%")
+	}
+	if filters.Role != nil {
+		qb.query = qb.query.Where("user.role = ?", string(*filters.Role))
+	}
+	if filters.IsActive != nil {
+		qb.query = qb.query.Where("user.is_active = ?", *filters.IsActive)
+	}
+	if filters.OrganizationID != nil {
+		qb.query = qb.query.Where("user.organization_id = ?", filters.OrganizationID.String())
+	}
+
+	// Date filters
+	if filters.CreatedAfter != nil {
+		qb.query = qb.query.Where("user.created_at > ?", *filters.CreatedAfter)
+	}
+	if filters.CreatedBefore != nil {
+		qb.query = qb.query.Where("user.created_at < ?", *filters.CreatedBefore)
+	}
+	if filters.UpdatedAfter != nil {
+		qb.query = qb.query.Where("user.updated_at > ?", *filters.UpdatedAfter)
+	}
+	if filters.UpdatedBefore != nil {
+		qb.query = qb.query.Where("user.updated_at < ?", *filters.UpdatedBefore)
+	}
+
+	return qb
+}
+
+// ApplyPagination applies pagination to the query
+func (qb *UserQueryBuilder) ApplyPagination(filters user.UserFilters) *UserQueryBuilder {
+	if filters.Limit > 0 {
+		qb.query = qb.query.Limit(filters.Limit)
+	}
+	if filters.Offset > 0 {
+		qb.query = qb.query.Offset(filters.Offset)
+	}
+	return qb
+}
+
+// ApplySorting applies sorting to the query
+func (qb *UserQueryBuilder) ApplySorting(filters user.UserFilters) *UserQueryBuilder {
+	orderBy := "created_at" // default column name
+	if filters.OrderBy != "" {
+		orderBy = filters.OrderBy
+	}
+	
+	order := "DESC" // default
+	if filters.Order != "" {
+		order = strings.ToUpper(filters.Order)
+		if order != "ASC" && order != "DESC" {
+			order = "DESC"
+		}
+	}
+	
+	// Use Order method with just the column name - Bun will handle the table alias automatically
+	qb.query = qb.query.Order(fmt.Sprintf("%s %s", orderBy, order))
+	return qb
+}
+
+// GetQuery returns the built query
+func (qb *UserQueryBuilder) GetQuery() *bun.SelectQuery { 
+	return qb.query
+}
+
 func NewUserRepository(db *bun.DB) user.Repository {
 	return &UserRepository{
 		db:     db,
 		logger: logger.New(),
 	}
+}
+
+// FindAll implements the unified user query with comprehensive filtering
+func (r *UserRepository) FindAll(ctx context.Context, filters user.UserFilters) ([]*user.User, error) {
+	query := r.db.NewSelect().
+		Model((*models.User)(nil)).
+		Relation("Profile")
+
+	// Apply filters
+	if filters.Name != "" {
+		query = query.Where("\"user\".name ILIKE ?", "%"+filters.Name+"%")
+	}
+	if filters.Email != "" {
+		query = query.Where("\"user\".email ILIKE ?", "%"+filters.Email+"%")
+	}
+	if filters.Role != nil {
+		query = query.Where("\"user\".role = ?", string(*filters.Role))
+	}
+	if filters.IsActive != nil {
+		query = query.Where("\"user\".is_active = ?", *filters.IsActive)
+	}
+	if filters.OrganizationID != nil {
+		query = query.Where("\"user\".organization_id = ?", filters.OrganizationID.String())
+	}
+
+	// Date filters
+	if filters.CreatedAfter != nil {
+		query = query.Where("\"user\".created_at > ?", *filters.CreatedAfter)
+	}
+	if filters.CreatedBefore != nil {
+		query = query.Where("\"user\".created_at < ?", *filters.CreatedBefore)
+	}
+	if filters.UpdatedAfter != nil {
+		query = query.Where("\"user\".updated_at > ?", *filters.UpdatedAfter)
+	}
+	if filters.UpdatedBefore != nil {
+		query = query.Where("\"user\".updated_at < ?", *filters.UpdatedBefore)
+	}
+
+	// Apply pagination
+	if filters.Limit > 0 {
+		query = query.Limit(filters.Limit)
+	}
+	if filters.Offset > 0 {
+		query = query.Offset(filters.Offset)
+	}
+
+	// Apply sorting
+	query = query.Order("created_at DESC")
+
+	var models []*models.User
+	err := query.Scan(ctx, &models)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find users: %w", err)
+	}
+
+	users := make([]*user.User, len(models))
+	for i, model := range models {
+		domainUser, err := r.toDomainWithContext(ctx, model)
+		if err != nil {
+			return nil, err
+		}
+		users[i] = domainUser
+	}
+
+	return users, nil
+}
+
+// Count implements the unified count query with comprehensive filtering
+func (r *UserRepository) Count(ctx context.Context, filters user.UserFilters) (int64, error) {
+	query := r.db.NewSelect().
+		Model((*models.User)(nil))
+
+	// Apply filters
+	if filters.Name != "" {
+		query = query.Where("\"user\".name ILIKE ?", "%"+filters.Name+"%")
+	}
+	if filters.Email != "" {
+		query = query.Where("\"user\".email ILIKE ?", "%"+filters.Email+"%")
+	}
+	if filters.Role != nil {
+		query = query.Where("\"user\".role = ?", string(*filters.Role))
+	}
+	if filters.IsActive != nil {
+		query = query.Where("\"user\".is_active = ?", *filters.IsActive)
+	}
+	if filters.OrganizationID != nil {
+		query = query.Where("\"user\".organization_id = ?", filters.OrganizationID.String())
+	}
+
+	// Date filters
+	if filters.CreatedAfter != nil {
+		query = query.Where("\"user\".created_at > ?", *filters.CreatedAfter)
+	}
+	if filters.CreatedBefore != nil {
+		query = query.Where("\"user\".created_at < ?", *filters.CreatedBefore)
+	}
+	if filters.UpdatedAfter != nil {
+		query = query.Where("\"user\".updated_at > ?", *filters.UpdatedAfter)
+	}
+	if filters.UpdatedBefore != nil {
+		query = query.Where("\"user\".updated_at < ?", *filters.UpdatedBefore)
+	}
+	
+	count, err := query.Count(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count users: %w", err)
+	}
+
+	return int64(count), nil
 }
 
 func (r *UserRepository) Save(ctx context.Context, u *user.User) error {
@@ -143,23 +340,23 @@ func (r *UserRepository) FindByOrganization(ctx context.Context, orgID shared.Or
 	query := r.db.NewSelect().
 		Model((*models.User)(nil)).
 		Relation("Profile").
-		Where("u.organization_id = ?", orgID.String())
+		Where("user.organization_id = ?", orgID.String())
 
 	// Apply filters
 	if filters.Name != "" {
-		query = query.Where("u.name ILIKE ?", "%"+filters.Name+"%")
+		query = query.Where("user.name ILIKE ?", "%"+filters.Name+"%")
 	}
 	if filters.Email != "" {
-		query = query.Where("u.email ILIKE ?", "%"+filters.Email+"%")
+		query = query.Where("user.email ILIKE ?", "%"+filters.Email+"%")
 	}
 	if filters.Role != nil {
-		query = query.Where("u.role = ?", string(*filters.Role))
+		query = query.Where("user.role = ?", string(*filters.Role))
 	}
 	if filters.IsActive != nil {
-		query = query.Where("u.is_active = ?", *filters.IsActive)
+		query = query.Where("user.is_active = ?", *filters.IsActive)
 	}
 	if filters.CreatedAfter != nil {
-		query = query.Where("u.created_at > ?", *filters.CreatedAfter)
+		query = query.Where("user.created_at > ?", *filters.CreatedAfter)
 	}
 
 	// Apply pagination
@@ -170,7 +367,7 @@ func (r *UserRepository) FindByOrganization(ctx context.Context, orgID shared.Or
 		query = query.Offset(filters.Offset)
 	}
 
-	query = query.Order("u.created_at DESC")
+	query = query.Order("created_at DESC")
 
 	var models []*models.User
 	err := query.Scan(ctx, &models)
@@ -194,13 +391,13 @@ func (r *UserRepository) FindByRole(ctx context.Context, role user.Role, orgID *
 	query := r.db.NewSelect().
 		Model((*models.User)(nil)).
 		Relation("Profile").
-		Where("u.role = ?", string(role))
+		Where("user.role = ?", string(role))
 
 	if orgID != nil {
-		query = query.Where("u.organization_id = ?", orgID.String())
+		query = query.Where("user.organization_id = ?", orgID.String())
 	}
 
-	query = query.Order("u.created_at DESC")
+	query = query.Order("created_at DESC")
 
 	var models []*models.User
 	err := query.Scan(ctx, &models)
@@ -250,13 +447,13 @@ func (r *UserRepository) FindActiveUsers(ctx context.Context, orgID *shared.Orga
 	query := r.db.NewSelect().
 		Model((*models.User)(nil)).
 		Relation("Profile").
-		Where("u.is_active = ?", true)
+		Where("user.is_active = ?", true)
 
 	if orgID != nil {
-		query = query.Where("u.organization_id = ?", orgID.String())
+		query = query.Where("user.organization_id = ?", orgID.String())
 	}
 
-	query = query.Order("u.created_at DESC")
+	query = query.Order("created_at DESC")
 
 	var models []*models.User
 	err := query.Scan(ctx, &models)
@@ -389,12 +586,17 @@ func (r *UserRepository) toDomainWithContext(ctx context.Context, model *models.
 		}
 	}
 
-	// Convert profile if exists
+	// Convert profile - always create one for doctors to avoid nil pointer issues
 	var profile *user.Profile
 	if model.Profile != nil {
-		// Create profile from model
-		// This would require Profile constructor or setters
-		profile = nil // Simplified for now
+		// Create a basic profile with default values for doctor-specific fields
+		// TODO: Implement proper profile conversion when database schema is updated
+		profile = user.NewProfile(userIDResult.GetValue())
+		// Profile will have default values for doctor-specific fields
+	} else {
+		// Create a default profile even if none exists in database
+		// This prevents nil pointer errors in the handler
+		profile = user.NewProfile(userIDResult.GetValue())
 	}
 
 	return user.ReconstructUser(
@@ -414,7 +616,3 @@ func (r *UserRepository) toDomainWithContext(ctx context.Context, model *models.
 	), nil
 }
 
-// Backward compatibility method
-func (r *UserRepository) toDomain(model *models.User) (*user.User, error) {
-	return r.toDomainWithContext(context.Background(), model)
-}

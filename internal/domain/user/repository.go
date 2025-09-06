@@ -17,10 +17,12 @@ type Repository interface {
 	// Query operations
 	FindByID(ctx context.Context, id shared.UserID) (*User, error)
 	FindByEmail(ctx context.Context, email shared.Email) (*User, error)
+	FindAll(ctx context.Context, filters UserFilters) ([]*User, error)
+	Count(ctx context.Context, filters UserFilters) (int64, error)
+
+	// Legacy methods for backward compatibility
 	FindByOrganization(ctx context.Context, orgID shared.OrganizationID, filters UserFilters) ([]*User, error)
 	FindByRole(ctx context.Context, role Role, orgID *shared.OrganizationID) ([]*User, error)
-
-	// Specialized queries
 	CountByOrganization(ctx context.Context, orgID shared.OrganizationID) (int64, error)
 	CountByRole(ctx context.Context, role Role) (int64, error)
 	FindActiveUsers(ctx context.Context, orgID *shared.OrganizationID) ([]*User, error)
@@ -31,13 +33,26 @@ type Repository interface {
 
 // UserFilters for query filtering
 type UserFilters struct {
+	// Basic filters
 	Name         string
 	Email        string
 	Role         *Role
 	IsActive     *bool
-	CreatedAfter *time.Time
-	Limit        int
-	Offset       int
+	OrganizationID *shared.OrganizationID
+	
+	// Date filters
+	CreatedAfter  *time.Time
+	CreatedBefore *time.Time
+	UpdatedAfter  *time.Time
+	UpdatedBefore *time.Time
+	
+	// Pagination
+	Limit  int
+	Offset int
+	
+	// Sorting
+	OrderBy string // e.g., "created_at", "name", "email"
+	Order   string // "ASC" or "DESC"
 }
 
 // Events

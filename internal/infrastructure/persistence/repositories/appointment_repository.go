@@ -174,6 +174,54 @@ func (r *AppointmentRepository) CountByOrganization(ctx context.Context, organiz
 	return count, nil
 }
 
+// GetAppointmentsByDate returns appointments for a specific date
+func (r *AppointmentRepository) GetAppointmentsByDate(ctx context.Context, organizationID, date string, limit int) ([]*appointment.Appointment, error) {
+	var models []models.Appointment
+	
+	query := r.db.NewSelect().
+		Model(&models).
+		Where("date = ?", date)
+	
+	if organizationID != "" {
+		query = query.Where("organization_id = ?", organizationID)
+	}
+	
+	err := query.
+		Order("start_time ASC").
+		Limit(limit).
+		Scan(ctx)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to get appointments by date: %w", err)
+	}
+
+	appointments := make([]*appointment.Appointment, len(models))
+	for i, model := range models {
+		appointments[i] = r.toDomain(&model)
+	}
+
+	return appointments, nil
+}
+
+// CountAppointmentsByDate returns count of appointments for a specific date
+func (r *AppointmentRepository) CountAppointmentsByDate(ctx context.Context, organizationID, date string) (int, error) {
+	query := r.db.NewSelect().
+		Model((*models.Appointment)(nil)).
+		Where("date = ?", date)
+	
+	if organizationID != "" {
+		query = query.Where("organization_id = ?", organizationID)
+	}
+	
+	count, err := query.Count(ctx)
+
+	if err != nil {
+		return 0, fmt.Errorf("failed to count appointments by date: %w", err)
+	}
+
+	return count, nil
+}
+
 func (r *AppointmentRepository) toModel(apt *appointment.Appointment) *models.Appointment {
 	return &models.Appointment{
 		ID:             apt.ID,

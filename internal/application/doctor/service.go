@@ -7,31 +7,83 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	"medika-backend/internal/domain/doctor"
+	"medika-backend/internal/domain/shared"
 	"medika-backend/internal/domain/user"
 	"medika-backend/internal/presentation/http/dto"
 	"medika-backend/pkg/logger"
 )
 
+// UserRepository interface for dependency injection
+type UserRepository interface {
+	FindAll(ctx context.Context, filters user.UserFilters) ([]*user.User, error)
+	Count(ctx context.Context, filters user.UserFilters) (int64, error)
+}
+
 type Service struct {
 	doctorRepo doctor.Repository
+	userRepo   UserRepository
 	logger     logger.Logger
 }
 
-func NewService(doctorRepo doctor.Repository, logger logger.Logger) *Service {
+func NewService(doctorRepo doctor.Repository, userRepo UserRepository, logger logger.Logger) *Service {
 	return &Service{
 		doctorRepo: doctorRepo,
+		userRepo:   userRepo,
 		logger:     logger,
 	}
 }
 
 // Methods that match the DoctorService interface
 func (s *Service) GetDoctorsByOrganization(ctx *fiber.Ctx, organizationID string, limit, offset int) ([]*user.User, error) {
-	// For now, return empty list - implement conversion logic later
-	return []*user.User{}, nil
+	// Build filters for doctors
+	filters := user.UserFilters{
+		Role:   &[]user.Role{user.RoleDoctor}[0], // Convert to pointer
+		Limit:  limit,
+		Offset: offset,
+		OrderBy: "created_at",
+		Order:   "DESC",
+	}
+
+	// Add organization filter if provided
+	if organizationID != "" {
+		orgID, err := shared.NewOrganizationID(organizationID)
+		if err != nil {
+			return nil, fmt.Errorf("invalid organization ID: %w", err)
+		}
+		filters.OrganizationID = &orgID
+	}
+
+	// Get doctors using unified FindAll method
+	doctors, err := s.userRepo.FindAll(ctx.Context(), filters)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get doctors: %w", err)
+	}
+
+	return doctors, nil
 }
 
 func (s *Service) CountDoctorsByOrganization(ctx *fiber.Ctx, organizationID string) (int, error) {
-	return s.doctorRepo.CountByOrganization(ctx.Context(), organizationID)
+	// Build filters for doctors count
+	filters := user.UserFilters{
+		Role: &[]user.Role{user.RoleDoctor}[0], // Convert to pointer
+	}
+
+	// Add organization filter if provided
+	if organizationID != "" {
+		orgID, err := shared.NewOrganizationID(organizationID)
+		if err != nil {
+			return 0, fmt.Errorf("invalid organization ID: %w", err)
+		}
+		filters.OrganizationID = &orgID
+	}
+
+	// Get count using unified Count method
+	count, err := s.userRepo.Count(ctx.Context(), filters)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count doctors: %w", err)
+	}
+
+	return int(count), nil
 }
 
 func (s *Service) GetDoctorByID(ctx *fiber.Ctx, doctorID string) (*user.User, error) {

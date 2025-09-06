@@ -66,9 +66,16 @@ func (r *DoctorRepository) GetByID(ctx context.Context, id string) (*doctor.Doct
 func (r *DoctorRepository) GetByOrganization(ctx context.Context, organizationID string, limit, offset int) ([]*doctor.Doctor, error) {
 	var userModels []models.User
 	
-	err := r.db.NewSelect().
+	query := r.db.NewSelect().
 		Model(&userModels).
-		Where("organization_id = ? AND role = ?", organizationID, "doctor").
+		Where("role = ?", "doctor")
+	
+	// Only filter by organization if organizationID is provided
+	if organizationID != "" {
+		query = query.Where("organization_id = ?", organizationID)
+	}
+	
+	err := query.
 		Limit(limit).
 		Offset(offset).
 		Scan(ctx)
@@ -120,10 +127,16 @@ func (r *DoctorRepository) Delete(ctx context.Context, id string) error {
 }
 
 func (r *DoctorRepository) CountByOrganization(ctx context.Context, organizationID string) (int, error) {
-	count, err := r.db.NewSelect().
+	query := r.db.NewSelect().
 		Model((*models.User)(nil)).
-		Where("organization_id = ? AND role = ?", organizationID, "doctor").
-		Count(ctx)
+		Where("role = ?", "doctor")
+	
+	// Only filter by organization if organizationID is provided
+	if organizationID != "" {
+		query = query.Where("organization_id = ?", organizationID)
+	}
+	
+	count, err := query.Count(ctx)
 
 	if err != nil {
 		return 0, fmt.Errorf("failed to count doctors: %w", err)

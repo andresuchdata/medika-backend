@@ -44,4 +44,6 @@ type Repository interface {
 	UpdateStatus(ctx context.Context, id string, status AppointmentStatus) error
 	Delete(ctx context.Context, id string) error
 	CountByOrganization(ctx context.Context, organizationID string) (int, error)
+	GetAppointmentsByDate(ctx context.Context, organizationID, date string, limit int) ([]*Appointment, error)
+	CountAppointmentsByDate(ctx context.Context, organizationID, date string) (int, error)
 }
