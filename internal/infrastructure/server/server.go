@@ -17,6 +17,7 @@ import (
 	"medika-backend/internal/application/appointment"
 	"medika-backend/internal/application/dashboard"
 	"medika-backend/internal/application/doctor"
+	"medika-backend/internal/application/notification"
 	"medika-backend/internal/application/organization"
 	"medika-backend/internal/application/patient"
 	"medika-backend/internal/application/queue"
@@ -59,6 +60,7 @@ func New(
 	organizationRepo := repositories.NewOrganizationRepository(db)
 	appointmentRepo := repositories.NewAppointmentRepository(db)
 	queueRepo := repositories.NewQueueRepository(db)
+	notificationRepo := repositories.NewNotificationRepository(db)
 	
 	// Application services
 	userService := user.NewService(userRepo, nil, logger) // eventBus would be injected
@@ -67,6 +69,7 @@ func New(
 	organizationService := organization.NewService(organizationRepo, logger)
 	appointmentService := appointment.NewService(appointmentRepo, logger)
 	queueService := queue.NewService(queueRepo, logger)
+	notificationService := notification.NewService(notificationRepo, logger)
 	dashboardService := dashboard.NewService(patientRepo, appointmentRepo, queueRepo, doctorRepo, logger)
 	
 	// Handlers
@@ -76,13 +79,14 @@ func New(
 	organizationsHandler := handlers.NewOrganizationHandler(organizationService, validator, logger)
 	appointmentsHandler := handlers.NewAppointmentHandler(appointmentService, validator, logger)
 	queueHandler := handlers.NewQueueHandler(queueService, validator, logger)
+	notificationHandler := handlers.NewNotificationHandler(notificationService, logger)
 	dashboardHandler := handlers.NewDashboardHandler(dashboardService, validator, logger)
 
 	// Setup middleware
 	setupMiddleware(app)
 	
 	// Setup routes
-	setupRoutes(app, userHandler, patientHandler, doctorsHandler, organizationsHandler, appointmentsHandler, queueHandler, dashboardHandler)
+	setupRoutes(app, userHandler, patientHandler, doctorsHandler, organizationsHandler, appointmentsHandler, queueHandler, notificationHandler, dashboardHandler)
 
 	return &Server{
 		app:    app,
@@ -123,7 +127,7 @@ func setupMiddleware(app *fiber.App) {
 	})
 }
 
-func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandler *handlers.PatientHandler, doctorsHandler *handlers.DoctorHandler, organizationsHandler *handlers.OrganizationHandler, appointmentsHandler *handlers.AppointmentHandler, queueHandler *handlers.QueueHandler, dashboardHandler *handlers.DashboardHandler) {
+func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandler *handlers.PatientHandler, doctorsHandler *handlers.DoctorHandler, organizationsHandler *handlers.OrganizationHandler, appointmentsHandler *handlers.AppointmentHandler, queueHandler *handlers.QueueHandler, notificationHandler *handlers.NotificationHandler, dashboardHandler *handlers.DashboardHandler) {
 	// Health check
 	app.Get("/health", func(c *fiber.Ctx) error {
 		return c.JSON(fiber.Map{
@@ -188,6 +192,15 @@ func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandl
 	queues.Put("/:id", queueHandler.UpdateQueue)
 	queues.Delete("/:id", queueHandler.DeleteQueue)
 	queues.Post("/:id/actions", queueHandler.QueueAction)
+
+	// Notification routes
+	notifications := api.Group("/notifications")
+	notifications.Get("/", middleware.AuthRequired(), notificationHandler.GetNotifications)
+	notifications.Get("/unread-count", middleware.AuthRequired(), notificationHandler.GetUnreadCount)
+	notifications.Put("/:id/read", middleware.AuthRequired(), notificationHandler.MarkAsRead)
+	notifications.Put("/:id/unread", middleware.AuthRequired(), notificationHandler.MarkAsUnread)
+	notifications.Put("/read-all", middleware.AuthRequired(), notificationHandler.MarkAllAsRead)
+	notifications.Delete("/:id", middleware.AuthRequired(), notificationHandler.DeleteNotification)
 
 	// Dashboard routes
 	dashboard := api.Group("/dashboard")

@@ -46,7 +46,7 @@ func AuthRequired() fiber.Handler {
 			}
 			// Return the secret key
 			// In production, this should come from environment variables
-			return []byte("your-super-secret-jwt-key"), nil
+			return []byte("your-super-secret-jwt-key-change-in-production"), nil
 		})
 
 		if err != nil || !token.Valid {

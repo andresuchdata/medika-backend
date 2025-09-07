@@ -140,26 +140,6 @@ type PatientQueue struct {
 	Organization *Organization `bun:"rel:belongs-to,join:organization_id=id"`
 }
 
-// Notification model
-type Notification struct {
-	bun.BaseModel `bun:"table:notifications"`
-
-	ID           string                 `bun:"id,pk,type:uuid,default:gen_random_uuid()"`
-	UserID       string                 `bun:"user_id,type:uuid,notnull"`
-	Type         string                 `bun:"type,notnull"`
-	Title        string                 `bun:"title,notnull"`
-	Message      string                 `bun:"message,notnull"`
-	Data         map[string]interface{} `bun:"data,type:jsonb"`
-	IsRead       bool                   `bun:"is_read,default:false"`
-	Channels     []string               `bun:"channels,type:text[]"`
-	Priority     string                 `bun:"priority,notnull"`
-	ScheduledFor *time.Time             `bun:"scheduled_for"`
-	SentAt       *time.Time             `bun:"sent_at"`
-	CreatedAt    time.Time              `bun:"created_at,default:current_timestamp"`
-
-	// Relations
-	User *User `bun:"rel:belongs-to,join:user_id=id"`
-}
 
 // Media model
 type Media struct {
