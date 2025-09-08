@@ -25,7 +25,7 @@ type Appointment struct {
 type AppointmentStatus string
 
 const (
-	StatusScheduled AppointmentStatus = "scheduled"
+	StatusPending   AppointmentStatus = "pending"
 	StatusConfirmed AppointmentStatus = "confirmed"
 	StatusInProgress AppointmentStatus = "in_progress"
 	StatusCompleted AppointmentStatus = "completed"

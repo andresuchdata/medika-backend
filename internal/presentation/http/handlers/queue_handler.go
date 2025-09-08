@@ -24,6 +24,7 @@ type QueueService interface {
 	CountQueuesByOrganization(ctx context.Context, organizationID string) (int, error)
 	CreateQueue(ctx context.Context, q *queue.PatientQueue) error
 	GetQueue(ctx context.Context, id string) (*queue.PatientQueue, error)
+	GetPatientQueue(ctx context.Context, patientID string) (*queue.PatientQueueWithDetails, error)
 	UpdateQueue(ctx context.Context, q *queue.PatientQueue) error
 	DeleteQueue(ctx context.Context, id string) error
 	CallNextPatient(ctx context.Context, organizationID string) (*queue.PatientQueue, error)
@@ -167,6 +168,68 @@ func (h *QueueHandler) GetQueue(c *fiber.Ctx) error {
 		Success: true,
 		Data:    queueResponse,
 		Message: "Queue retrieved successfully",
+	}
+	
+	return c.JSON(response)
+}
+
+// GET /api/v1/queues/patient/:patientId
+func (h *QueueHandler) GetPatientQueue(c *fiber.Ctx) error {
+	patientID := c.Params("patientId")
+	
+	// Validate patient ID
+	if err := h.validator.Var(patientID, "uuid"); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(dto.ErrorResponse{
+			Error:   "Invalid patient ID",
+			Message: "Patient ID must be a valid UUID",
+		})
+	}
+	
+	// Get patient queue from service
+	patientQueue, err := h.queueService.GetPatientQueue(c.Context(), patientID)
+	if err != nil {
+		h.logger.Error(c.Context(), "Failed to get patient queue", "error", err)
+		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
+			Error:   "Internal server error",
+			Message: "Failed to retrieve patient queue data",
+		})
+	}
+	
+	// If no queue found (patient has no appointment today), return empty response
+	if patientQueue == nil {
+		response := dto.PatientQueueDetailResponse{
+			Success: true,
+			Data:    nil,
+			Message: "No appointment scheduled for today",
+		}
+
+		return c.JSON(response)
+	}
+	
+	// Convert to DTO
+	patientQueueResponse := dto.PatientQueueResponse{
+		ID:                patientQueue.ID,
+		AppointmentID:     patientQueue.AppointmentID,
+		OrganizationID:    patientQueue.OrganizationID,
+		Position:          patientQueue.Position,
+		EstimatedWaitTime: patientQueue.EstimatedWaitTime,
+		Status:            patientQueue.Status,
+		CreatedAt:         patientQueue.CreatedAt,
+		UpdatedAt:         patientQueue.UpdatedAt,
+		PatientName:       patientQueue.PatientName,
+		PatientID:         patientQueue.PatientID,
+		DoctorName:        patientQueue.DoctorName,
+		DoctorID:          patientQueue.DoctorID,
+		AppointmentDate:   patientQueue.AppointmentDate,
+		AppointmentTime:   patientQueue.AppointmentTime,
+		AppointmentType:   patientQueue.AppointmentType,
+		AppointmentStatus: patientQueue.AppointmentStatus,
+	}
+	
+	response := dto.PatientQueueDetailResponse{
+		Success: true,
+		Data:    &patientQueueResponse,
+		Message: "Patient queue retrieved successfully",
 	}
 	
 	return c.JSON(response)

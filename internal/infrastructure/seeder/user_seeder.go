@@ -105,14 +105,14 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			IsActive:       true,
 		},
 
-		// Patient users
+		// Patient users (patients don't require organization ID initially)
 		{
 			ID:             "11150001-1111-1111-1111-111111111111",
 			Email:          "patient.john@email.com",
 			Name:           "John Doe",
 			PasswordHash:   defaultPassword,
 			Role:           "patient",
-			OrganizationID: stringPtr("01234567-89ab-cdef-0123-456789abcdef"),
+			OrganizationID: nil, // Patients can exist without organization initially
 			Phone:          stringPtr("+15555550004"),
 			IsActive:       true,
 		},
@@ -122,7 +122,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Name:           "Jane Smith",
 			PasswordHash:   defaultPassword,
 			Role:           "patient",
-			OrganizationID: stringPtr("01234567-89ab-cdef-0123-456789abcdef"),
+			OrganizationID: nil, // Patients can exist without organization initially
 			Phone:          stringPtr("+15555550044"),
 			IsActive:       true,
 		},
@@ -132,7 +132,7 @@ func (s *UserSeeder) Seed(ctx context.Context, db *bun.DB) error {
 			Name:           "Bob Johnson",
 			PasswordHash:   defaultPassword,
 			Role:           "patient",
-			OrganizationID: stringPtr("01234567-89ab-cdef-0123-456789abcde0"),
+			OrganizationID: nil, // Patients can exist without organization initially
 			Phone:          stringPtr("+15555550045"),
 			IsActive:       true,
 		},

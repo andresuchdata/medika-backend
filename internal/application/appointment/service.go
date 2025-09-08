@@ -37,10 +37,14 @@ func (s *Service) GetAppointments(ctx *fiber.Ctx, organizationID, doctorID, pati
 		return s.appointmentRepo.GetByOrganization(ctx.Context(), organizationID, limit, offset)
 	}
 	
-	// If no specific filters, get all appointments (similar to dashboard behavior)
-	// We need to implement a method to get all appointments, or use a default organization
-	// For now, let's get appointments for today's date without organization filter
-	return s.appointmentRepo.GetAppointmentsByDate(ctx.Context(), "", time.Now().Format("2006-01-02"), limit)
+	// If no specific filters, get appointments for the user's organization from auth context
+	userOrgID := ctx.Locals("organization_id")
+	if userOrgID != nil && userOrgID != "" {
+		return s.appointmentRepo.GetByOrganization(ctx.Context(), userOrgID.(string), limit, offset)
+	}
+	
+	// Fallback: if no auth context, return empty (should not happen in production)
+	return []*appointment.Appointment{}, nil
 }
 
 func (s *Service) CountAppointments(ctx *fiber.Ctx, organizationID, doctorID, patientID string) (int, error) {
@@ -50,8 +54,14 @@ func (s *Service) CountAppointments(ctx *fiber.Ctx, organizationID, doctorID, pa
 		return s.appointmentRepo.CountByOrganization(ctx.Context(), organizationID)
 	}
 	
-	// If no organization filter, count all appointments for today (similar to dashboard behavior)
-	return s.appointmentRepo.CountAppointmentsByDate(ctx.Context(), "", time.Now().Format("2006-01-02"))
+	// If no organization filter, count appointments for the user's organization from auth context
+	userOrgID := ctx.Locals("organization_id")
+	if userOrgID != nil && userOrgID != "" {
+		return s.appointmentRepo.CountByOrganization(ctx.Context(), userOrgID.(string))
+	}
+	
+	// Fallback: if no auth context, return 0 (should not happen in production)
+	return 0, nil
 }
 
 func (s *Service) GetAppointmentByID(ctx *fiber.Ctx, appointmentID string) (*appointment.Appointment, error) {
@@ -59,9 +69,51 @@ func (s *Service) GetAppointmentByID(ctx *fiber.Ctx, appointmentID string) (*app
 }
 
 func (s *Service) CreateAppointment(ctx *fiber.Ctx, appointmentData *dto.CreateAppointmentRequest) (*appointment.Appointment, error) {
-	// Convert DTO to domain entity and create
-	// For now, return error - implement conversion logic later
-	return nil, fmt.Errorf("not implemented yet")
+	// Parse the date from string to time.Time
+	// Try ISO format first, then fallback to date-only format
+	var date time.Time
+	var err error
+	
+	// Try parsing as ISO format (e.g., "2025-09-09T00:00:00.000Z")
+	date, err = time.Parse(time.RFC3339, appointmentData.Date)
+	if err != nil {
+		// Fallback to date-only format (e.g., "2025-09-09")
+		date, err = time.Parse("2006-01-02", appointmentData.Date)
+		if err != nil {
+			return nil, fmt.Errorf("invalid date format, expected ISO format or YYYY-MM-DD: %w", err)
+		}
+	}
+
+	// Organization ID is required for appointments
+	// It should come from the request (set by the staff member creating the appointment)
+	organizationID := appointmentData.OrganizationID
+	if organizationID == "" {
+		return nil, fmt.Errorf("organization ID is required for appointments")
+	}
+
+	// Create domain entity from DTO
+	apt := &appointment.Appointment{
+		PatientID:      appointmentData.PatientID,
+		DoctorID:       appointmentData.DoctorID,
+		OrganizationID: organizationID,
+		RoomID:         appointmentData.RoomID,
+		Date:           date,
+		StartTime:      appointmentData.StartTime,
+		EndTime:        appointmentData.EndTime,
+		Duration:       appointmentData.Duration,
+		Status:         appointment.StatusPending, // Default status
+		Type:           appointmentData.Type,
+		Notes:          appointmentData.Notes,
+		CreatedAt:      time.Now(),
+		UpdatedAt:      time.Now(),
+	}
+
+	// Create appointment in repository
+	if err := s.appointmentRepo.Create(ctx.Context(), apt); err != nil {
+		return nil, fmt.Errorf("failed to create appointment: %w", err)
+	}
+
+	return apt, nil
 }
 
 func (s *Service) UpdateAppointment(ctx *fiber.Ctx, appointmentID string, appointmentData *dto.UpdateAppointmentRequest) (*appointment.Appointment, error) {

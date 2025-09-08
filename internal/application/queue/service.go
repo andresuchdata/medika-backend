@@ -55,6 +55,21 @@ func (s *Service) GetQueue(ctx context.Context, id string) (*queue.PatientQueue,
 	return s.queueRepo.GetByID(ctx, id)
 }
 
+// GetPatientQueue retrieves a patient's queue with enriched details
+func (s *Service) GetPatientQueue(ctx context.Context, patientID string) (*queue.PatientQueueWithDetails, error) {
+	patientQueue, err := s.queueRepo.GetPatientQueueWithDetails(ctx, patientID)
+	if err != nil {
+		return nil, err
+	}
+	
+	// If no queue found (patient has no appointment today), return nil without error
+	if patientQueue == nil {
+		return nil, nil
+	}
+	
+	return patientQueue, nil
+}
+
 // UpdateQueue updates an existing queue
 func (s *Service) UpdateQueue(ctx context.Context, q *queue.PatientQueue) error {
 	// If status changed to completed or cancelled, update positions

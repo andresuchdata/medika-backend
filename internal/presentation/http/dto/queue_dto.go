@@ -50,3 +50,32 @@ type QueuePositionUpdate struct {
 	ID       string `json:"id" validate:"required,uuid"`
 	Position int    `json:"position" validate:"required,min=1"`
 }
+
+// PatientQueueResponse represents a queue response with enriched patient and appointment data
+type PatientQueueResponse struct {
+	ID                string    `json:"id"`
+	AppointmentID     string    `json:"appointment_id"`
+	OrganizationID    string    `json:"organization_id"`
+	Position          int       `json:"position"`
+	EstimatedWaitTime int       `json:"estimated_wait_time"`
+	Status            string    `json:"status"`
+	CreatedAt         time.Time `json:"created_at"`
+	UpdatedAt         time.Time `json:"updated_at"`
+	
+	// Enriched data
+	PatientName    string `json:"patient_name"`
+	PatientID      string `json:"patient_id"`
+	DoctorName     string `json:"doctor_name"`
+	DoctorID       string `json:"doctor_id"`
+	AppointmentDate string `json:"appointment_date"`
+	AppointmentTime string `json:"appointment_time"`
+	AppointmentType string `json:"appointment_type"`
+	AppointmentStatus string `json:"appointment_status"`
+}
+
+// PatientQueueDetailResponse represents a detailed patient queue response
+type PatientQueueDetailResponse struct {
+	Success bool                  `json:"success"`
+	Data    *PatientQueueResponse `json:"data"`
+	Message string                `json:"message"`
+}

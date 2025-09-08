@@ -175,7 +175,7 @@ func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandl
 	organizations.Put("/:id", organizationsHandler.UpdateOrganization)
 	organizations.Delete("/:id", organizationsHandler.DeleteOrganization)
 
-	// Appointment routes
+	// Appointment routes (temporarily without auth for development)
 	appointments := api.Group("/appointments")
 	appointments.Get("/", appointmentsHandler.GetAppointments)
 	appointments.Get("/:id", appointmentsHandler.GetAppointment)
@@ -187,6 +187,7 @@ func setupRoutes(app *fiber.App, userHandler *handlers.UserHandler, patientHandl
 	// Queue routes
 	queues := api.Group("/queues")
 	queues.Get("/", queueHandler.GetQueues)
+	queues.Get("/patient/:patientId", queueHandler.GetPatientQueue) // Must be before /:id route
 	queues.Get("/:id", queueHandler.GetQueue)
 	queues.Post("/", queueHandler.CreateQueue)
 	queues.Put("/:id", queueHandler.UpdateQueue)

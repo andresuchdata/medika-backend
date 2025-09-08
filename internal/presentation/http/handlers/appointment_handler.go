@@ -197,6 +197,15 @@ func (h *AppointmentHandler) CreateAppointment(c *fiber.Ctx) error {
 	apt, err := h.appointmentService.CreateAppointment(c, &req)
 	if err != nil {
 		h.logger.Error(c.Context(), "Failed to create appointment", "error", err)
+		
+		// Return 401 if organization ID is missing
+		if err.Error() == "organization ID is required" {
+			return c.Status(fiber.StatusUnauthorized).JSON(dto.ErrorResponse{
+				Error:   "Unauthorized",
+				Message: "Organization ID is required",
+			})
+		}
+		
 		return c.Status(fiber.StatusInternalServerError).JSON(dto.ErrorResponse{
 			Error:   "Failed to create appointment",
 			Message: err.Error(),
