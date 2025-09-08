@@ -75,23 +75,23 @@ type UserResponse struct {
 	Email          string    `json:"email"`
 	Name           string    `json:"name"`
 	Role           string    `json:"role"`
-	OrganizationID *string   `json:"organization_id,omitempty"`
+	OrganizationID *string   `json:"organizationId,omitempty"`
 	Phone          *string   `json:"phone,omitempty"`
-	AvatarURL      *string   `json:"avatar_url,omitempty"`
-	IsActive       bool      `json:"is_active"`
+	AvatarURL      *string   `json:"avatar,omitempty"`
+	IsActive       bool      `json:"isActive"`
 	Profile        *ProfileResponse `json:"profile,omitempty"`
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	CreatedAt      time.Time `json:"createdAt"`
+	UpdatedAt      time.Time `json:"updatedAt"`
 }
 
 type ProfileResponse struct {
-	DateOfBirth      *time.Time `json:"date_of_birth,omitempty"`
+	DateOfBirth      *time.Time `json:"dateOfBirth,omitempty"`
 	Gender           *string    `json:"gender,omitempty"`
 	Address          *string    `json:"address,omitempty"`
-	EmergencyContact *string    `json:"emergency_contact,omitempty"`
-	MedicalHistory   *string    `json:"medical_history,omitempty"`
+	EmergencyContact *string    `json:"emergencyContact,omitempty"`
+	MedicalHistory   *string    `json:"medicalHistory,omitempty"`
 	Allergies        []string   `json:"allergies,omitempty"`
-	BloodType        *string    `json:"blood_type,omitempty"`
+	BloodType        *string    `json:"bloodType,omitempty"`
 }
 
 type LoginResponse struct {

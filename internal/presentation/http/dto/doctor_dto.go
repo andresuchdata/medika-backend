@@ -27,8 +27,8 @@ type CreateDoctorRequest struct {
 	Password       string   `json:"password" validate:"required,min=8"`
 	Phone          string   `json:"phone" validate:"required"`
 	Specialty      string   `json:"specialty" validate:"required"`
-	LicenseNumber  string   `json:"licenseNumber" validate:"required"`
-	OrganizationID string   `json:"organizationId" validate:"required,uuid"`
+	LicenseNumber  string   `json:"license_number" validate:"required"`
+	OrganizationID string   `json:"organization_id" validate:"required,uuid"`
 	Bio            *string  `json:"bio,omitempty"`
 	Experience     *int     `json:"experience,omitempty"`
 	Education      []string `json:"education,omitempty"`
@@ -41,7 +41,7 @@ type UpdateDoctorRequest struct {
 	Name           *string   `json:"name,omitempty" validate:"omitempty,min=2,max=100"`
 	Phone          *string   `json:"phone,omitempty"`
 	Specialty      *string   `json:"specialty,omitempty"`
-	LicenseNumber  *string   `json:"licenseNumber,omitempty"`
+	LicenseNumber  *string   `json:"license_number,omitempty"`
 	Status         *string   `json:"status,omitempty" validate:"omitempty,oneof=active inactive on-leave"`
 	Bio            *string   `json:"bio,omitempty"`
 	Experience     *int      `json:"experience,omitempty"`
